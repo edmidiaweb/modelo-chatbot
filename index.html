@@ -37,20 +37,20 @@
         <div class="flex-1 wa-bg p-4 overflow-y-auto space-y-4 flex flex-col" id="chatArea">
             <!-- Balão Inicial Automático -->
             <div class="wa-bubble-in p-3 shadow-md text-sm max-w-[85%] self-start text-gray-800 border border-gray-200/50">
-                <p>Olá! Escolha um tópico para prosseguir ou deixe sua mensagem, assim que possível lhe retorno.</p>
+                <p>Olá! Escolha um tópico abaixo ou digite diretamente o que você precisa para prosseguir.</p>
                 <span class="text-[10px] text-gray-400 block text-right mt-1" id="time-stamp"></span>
             </div>
-            
-            <!-- Bloco de Botões Dinâmicos -->
-            <div class="flex flex-col space-y-2 items-start w-full transition-all duration-350" id="optionsBlock"></div>
         </div>
 
-        <!-- INPUT INFERIOR (Desativado inicialmente, ativa apenas no momento do texto) -->
+        <!-- BLOCO DE BOTÕES (FIXADO NA BASE) -->
+        <div class="px-4 py-2 bg-[#efeae2]/60 border-t border-gray-200/30 flex flex-col space-y-2" id="optionsBlock"></div>
+
+        <!-- INPUT INFERIOR (ATIVADO POR PADRÃO) -->
         <div class="bg-[#f0f2f5] p-3 flex items-center space-x-2 border-t border-gray-200">
-            <div class="flex-1 bg-gray-200 rounded-lg flex items-center px-3 shadow-inner" id="inputWrapper">
-                <input type="text" id="userInput" placeholder="Escolha uma opção acima..." disabled class="w-full bg-transparent py-2.5 text-sm text-gray-700 outline-none placeholder-gray-400" onkeypress="verificarEnter(event)">
+            <div class="flex-1 bg-white rounded-lg flex items-center px-3 shadow-inner" id="inputWrapper">
+                <input type="text" id="userInput" placeholder="Escolha uma opção ou digite sua mensagem..." class="w-full bg-transparent py-2.5 text-sm text-gray-700 outline-none placeholder-gray-400" onkeypress="verificarEnter(event)">
             </div>
-            <button onclick="enviarTextoBriefing()" id="sendBtn" disabled class="bg-gray-400 text-white p-2.5 rounded-full shadow-md transition-all flex items-center justify-center active:scale-90">
+            <button onclick="enviarTextoLivre()" id="sendBtn" class="wa-green text-white p-2.5 rounded-full shadow-md transition-all flex items-center justify-center active:scale-90">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
@@ -63,7 +63,6 @@
         const TELEFONE_DESTINO = "5513996305218";
         document.getElementById('time-stamp').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-        // ESTRUTURA DE DADOS COMPLETA DO SEU PORTFÓLIO (Fácil de editar valores e textos aqui)
         const fluxoDados = {
             inicio: {
                 "🎬 Edição de Mídia": "edicao_midia",
@@ -101,15 +100,9 @@
             }
         };
 
-        // Estado do atendimento do cliente atual
-        let dadosColetados = {
-            categoria: "",
-            subcategoria: "",
-            especificacao: "",
-            detalhesUsuario: ""
-        };
-
+        let dadosColetados = { categoria: "", subcategoria: "", especificacao: "", detalhesUsuario: "" };
         let estagioAtual = "inicio";
+        let aguardandoValidacao = false;
 
         function rolarChat() {
             const chatArea = document.getElementById('chatArea');
@@ -139,6 +132,7 @@
             container.innerHTML = ""; 
             
             const opcoes = fluxoDados[chaveEstado];
+            if (!opcoes) return;
             
             Object.keys(opcoes).forEach(textoBotao => {
                 const btn = document.createElement('button');
@@ -153,7 +147,6 @@
         function processarClique(textoSelecionado, proximoPasso) {
             adicionarMensagemUsuario(textoSelecionado);
 
-            // Mapeia e guarda as informações com base no nível do estágio atual
             if (estagioAtual === "inicio") {
                 dadosColetados.categoria = textoSelecionado;
             } else if (fluxoDados[estagioAtual] && Object.values(fluxoDados[estagioAtual]).includes("INPUT_TEXTO")) {
@@ -163,73 +156,175 @@
             }
 
             if (proximoPasso === "INPUT_TEXTO") {
-                // Esconde botões e abre o campo de digitação
                 document.getElementById('optionsBlock').innerHTML = "";
-                ativarInputTexto();
+                solicitarBriefingFinal();
             } else {
                 estagioAtual = proximoPasso;
-                setTimeout(() => {
-                    renderizarBotoes(proximoPasso);
-                }, 400);
+                setTimeout(() => { renderizarBotoes(proximoPasso); }, 400);
             }
         }
 
-        function ativarInputTexto() {
+        function solicitarBriefingFinal() {
             adicionarMensagemBot("Descreva o conteúdo do serviço e o resultado final esperado.");
-            
-            const input = document.getElementById('userInput');
-            const btn = document.getElementById('sendBtn');
-            const wrapper = document.getElementById('inputWrapper');
-
-            input.disabled = false;
-            input.placeholder = "Escreva seu briefing detalhado aqui...";
-            wrapper.classList.remove('bg-gray-200');
-            wrapper.classList.add('bg-white');
-            
-            btn.disabled = false;
-            btn.classList.remove('bg-gray-400');
-            btn.classList.add('wa-green');
+            document.getElementById('userInput').placeholder = "Escreva seu briefing detalhado aqui...";
         }
 
-        function enviarTextoBriefing() {
+        // NOVA FUNÇÃO: Trata a digitação a qualquer momento
+        function enviarTextoLivre() {
+            if (aguardandoValidacao) return; // Bloqueia digitação durante a tela de sim/não
+
             const input = document.getElementById('userInput');
             const texto = input.value.trim();
             
             if (texto === "") return;
 
-            dadosColetados.detalhesUsuario = texto;
-            adicionarMensagemUsuario(texto);
             input.value = "";
-            
-            // Trava os inputs novamente após envio
-            input.disabled = true;
-            document.getElementById('sendBtn').disabled = true;
 
-            adicionarMensagemBot("Obrigado pelas informações, assim que possível lhe retorno.");
-
-            // Dispara para o WhatsApp após uma pequena janela de leitura humana
-            setTimeout(() => {
-                dispararWhatsApp();
-            }, 1200);
-        }
-
-        function dispararWhatsApp() {
-            let mensagemFormatada = `Olá! Recebi um novo lead estruturado do assistente virtual:\n\n`;
-            mensagemFormatada += `📁 *Grupo:* ${dadosColetados.categoria}\n`;
-            if(dadosColetados.subcategoria) mensagemFormatada += `🛠️ *Serviço:* ${dadosColetados.subcategoria}\n`;
-            if(dadosColetados.especificacao) mensagemFormatada += `💰 *Escopo/Preço:* ${dadosColetados.especificacao}\n\n`;
-            mensagemFormatada += `📝 *Briefing do Cliente:*\n"${dadosColetados.detalhesUsuario}"`;
-
-            window.location.href = `https://wa.me/${TELEFONE_DESTINO}?text=${encodeURIComponent(mensagemFormatada)}`;
-        }
-
-        function verificarEnter(event) {
-            if (event.key === "Enter") {
-                enviarTextoBriefing();
+            // Caso o usuário digite texto livre logo no início ou antes do final padrão
+            if (dadosColetados.categoria === "") {
+                dadosColetados.categoria = "Geral / Mensagem Direta";
+                dadosColetados.detalhesUsuario = texto;
+                adicionarMensagemUsuario(texto);
+                document.getElementById('optionsBlock').innerHTML = "";
+                bloquearInputInferior();
+                setTimeout(() => { apresentarEspelhoValidacao(); }, 600);
+            } 
+            // Caso ele esteja na etapa final padrão (INPUT_TEXTO)
+            else {
+                dadosColetados.detalhesUsuario = texto;
+                adicionarMensagemUsuario(texto);
+                bloquearInputInferior();
+                setTimeout(() => { apresentarEspelhoValidacao(); }, 600);
             }
         }
 
-        // Execução Inicial
+        function bloquearInputInferior() {
+            const input = document.getElementById('userInput');
+            const btn = document.getElementById('sendBtn');
+            const wrapper = document.getElementById('inputWrapper');
+            
+            input.disabled = true;
+            input.placeholder = "Confirme as opções acima...";
+            wrapper.classList.remove('bg-white');
+            wrapper.classList.add('bg-gray-200');
+            btn.disabled = true;
+            btn.classList.remove('wa-green');
+            btn.classList.add('bg-gray-400');
+            aguardandoValidacao = true;
+        }
+
+        function desbloquearInputInferior() {
+            const input = document.getElementById('userInput');
+            const btn = document.getElementById('sendBtn');
+            const wrapper = document.getElementById('inputWrapper');
+            
+            input.disabled = false;
+            input.placeholder = "Escolha uma opção ou digite sua mensagem...";
+            wrapper.classList.remove('bg-gray-200');
+            wrapper.classList.add('bg-white');
+            btn.disabled = false;
+            btn.classList.remove('bg-gray-400');
+            btn.classList.add('wa-green');
+            aguardandoValidacao = false;
+        }
+
+        function apresentarEspelhoValidacao() {
+            let espelho = `<strong>Informações fornecidas:</strong><br><br>`;
+            espelho += `📁 <strong>Grupo:</strong> ${dadosColetados.categoria}<br>`;
+            if(dadosColetados.subcategoria) espelho += `🛠️ <strong>Serviço:</strong> ${dadosColetados.subcategoria}<br>`;
+            if(dadosColetados.especificacao) espelho += `💰 <strong>Escopo:</strong> ${dadosColetados.especificacao}<br>`;
+            espelho += `📝 <strong>Briefing:</strong> "${dadosColetados.detalhesUsuario}"`;
+
+            adicionarMensagemBot(espelho);
+
+            setTimeout(() => {
+                adicionarMensagemBot("as informações estao corretas?");
+                renderizarBotoesSimNao(); 
+            }, 600);
+        }
+
+        function renderizarBotoesSimNao() {
+            const container = document.getElementById('optionsBlock');
+            container.innerHTML = ""; 
+
+            const btnSim = document.createElement('button');
+            btnSim.className = "bg-emerald-600 text-white text-sm px-4 py-3 rounded-xl font-bold shadow-md hover:bg-emerald-700 active:scale-95 transition-all text-center w-full mb-1 cursor-pointer";
+            btnSim.innerText = "sim";
+            btnSim.onclick = () => processarDecisaoConfirmacao("sim");
+
+            const btnNao = document.createElement('button');
+            btnNao.className = "bg-red-500 text-white text-sm px-4 py-3 rounded-xl font-bold shadow-md hover:bg-red-600 active:scale-95 transition-all text-center w-full cursor-pointer";
+            btnNao.innerText = "nao";
+            btnNao.onclick = () => processarDecisaoConfirmacao("nao");
+
+            container.appendChild(btnSim);
+            container.appendChild(btnNao);
+            rolarChat();
+        }
+
+        function processarDecisaoConfirmacao(escolha) {
+            const container = document.getElementById('optionsBlock');
+            container.innerHTML = ""; 
+
+            if (escolha === "sim") {
+                adicionarMensagemUsuario("sim");
+                
+                setTimeout(() => {
+                    const btnEnviar = document.createElement('button');
+                    btnEnviar.className = "bg-[#25D366] text-white text-base px-4 py-4 rounded-xl font-black shadow-lg hover:bg-emerald-600 active:scale-95 transition-all text-center w-full flex items-center justify-center cursor-pointer";
+                    btnEnviar.innerText = "enviar";
+                    btnEnviar.onclick = () => dispararWhatsApp();
+                    container.appendChild(btnEnviar);
+                    rolarChat();
+                }, 400);
+
+            } else {
+                adicionarMensagemUsuario("nao");
+
+                setTimeout(() => {
+                    const btnEditar = document.createElement('button');
+                    btnEditar.className = "bg-amber-500 text-white text-base px-4 py-4 rounded-xl font-black shadow-lg hover:bg-amber-600 active:scale-95 transition-all text-center w-full cursor-pointer";
+                    btnEditar.innerText = "editar novamente";
+                    btnEditar.onclick = () => reiniciarChatbot();
+                    container.appendChild(btnEditar);
+                    rolarChat();
+                }, 400);
+            }
+        }
+
+        function reiniciarChatbot() {
+            dadosColetados = { categoria: "", subcategoria: "", especificacao: "", detalhesUsuario: "" };
+            estagioAtual = "inicio";
+
+            const chatArea = document.getElementById('chatArea');
+            chatArea.innerHTML = `
+                <div class="wa-bubble-in p-3 shadow-md text-sm max-w-[85%] self-start text-gray-800 border border-gray-200/50">
+                    <p>Olá! Escolha um tópico abaixo ou digite diretamente o que você precisa para prosseguir.</p>
+                    <span class="text-[10px] text-gray-400 block text-right mt-1" id="time-stamp"></span>
+                </div>
+            `;
+            document.getElementById('time-stamp').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            desbloquearInputInferior();
+            renderizarBotoes("inicio");
+        }
+
+        function dispararWhatsApp() {
+            let msg = `Olá! Recebi um novo lead estruturado do assistente virtual:\n\n`;
+            msg += `📁 *Grupo:* ${dadosColetados.categoria}\n`;
+            if(dadosColetados.subcategoria) msg += `🛠️ *Serviço:* ${dadosColetados.subcategoria}\n`;
+            if(dadosColetados.especificacao) msg += `💰 *Escopo/Preço:* ${dadosColetados.especificacao}\n\n`;
+            msg += `📝 *Briefing do Cliente:*\n"${dadosColetados.detalhesUsuario}"`;
+
+            window.location.href = `https://wa.me/${TELEFONE_DESTINO}?text=${encodeURIComponent(msg)}`;
+        }
+
+        function verificarEnter(event) {
+            if (event.key === "Enter") { enviarTextoLivre(); }
+        }
+
+        // Inicialização padrão com tudo liberado
+        desbloquearInputInferior();
         renderizarBotoes("inicio");
     </script>
 </body>
