@@ -34,7 +34,7 @@
 
         <div class="flex-1 wa-bg p-4 overflow-y-auto space-y-4 flex flex-col" id="chatArea">
             <div class="wa-bubble-in p-3 shadow-md text-sm max-w-[85%] self-start text-gray-800 border border-gray-200/50">
-                <p>Olá! Escolha um tópico abaixo ou digite o que você precisa para prosseguir.</p>
+                <p>Olá! Seja bem-vindo ao atendimento da ED Art&Mídia. Para iniciarmos, por favor, digite o seu <strong>nome completo</strong>:</p>
                 <span class="text-[10px] text-gray-400 block text-right mt-1" id="time-stamp"></span>
             </div>
         </div>
@@ -43,7 +43,7 @@
 
         <div class="bg-[#f0f2f5] p-3 flex items-center space-x-2 border-t border-gray-200">
             <div class="flex-1 bg-white rounded-lg flex items-center px-3 shadow-inner" id="inputWrapper">
-                <input type="text" id="userInput" placeholder="Escolha uma opção ou digite sua mensagem..." class="w-full bg-transparent py-2.5 text-sm text-gray-700 outline-none placeholder-gray-400" onkeypress="verificarEnter(event)">
+                <input type="text" id="userInput" placeholder="Digite seu nome completo..." class="w-full bg-transparent py-2.5 text-sm text-gray-700 outline-none placeholder-gray-400" onkeypress="verificarEnter(event)">
             </div>
             <button onclick="enviarTextoLivre()" id="sendBtn" class="wa-green text-white p-2.5 rounded-full shadow-md transition-all flex items-center justify-center active:scale-90">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -96,8 +96,11 @@
             }
         };
 
+        // OBJETO EXPANDIDO PARA COLETAR OS DADOS DO LEAD PRELIMINAR
+        let dadosCliente = { nome: "", idade: "", ramo: "" };
         let dadosColetados = { categoria: "", subcategoria: "", especificacao: "", detalhesUsuario: "" };
-        let estagioAtual = "inicio";
+        
+        let estagioAtual = "coleta_nome"; // Inicia na triagem linear
         let aguardandoValidacao = false;
 
         function rolarChat() {
@@ -165,24 +168,46 @@
             document.getElementById('userInput').placeholder = "Escreva seu briefing detalhado aqui...";
         }
 
+        // CONTROLADOR DO INPUT TEXTO LIVRE MUDANDO DE ACORDO COM O ESTÁGIO
         function enviarTextoLivre() {
             if (aguardandoValidacao) return; 
 
             const input = document.getElementById('userInput');
             const texto = input.value.trim();
-            
             if (texto === "") return;
 
             input.value = "";
 
-            if (dadosColetados.categoria === "") {
-                dadosColetados.categoria = "Geral / Mensagem Direta";
-                dadosColetados.detalhesUsuario = texto;
+            // MÁQUINA DE ESTADOS DO ONBOARDING LINEAR
+            if (estagioAtual === "coleta_nome") {
+                dadosCliente.nome = texto;
                 adicionarMensagemUsuario(texto);
-                document.getElementById('optionsBlock').innerHTML = "";
-                bloquearInputInferior();
-                setTimeout(() => { apresentarEspelhoValidacao(); }, 600);
+                estagioAtual = "coleta_idade";
+                setTimeout(() => {
+                    adicionarMensagemBot(`Prazer, ${dadosCliente.nome}! Agora, por favor, me informe a sua <strong>idade</strong>:`);
+                    input.placeholder = "Digite sua idade...";
+                }, 400);
             } 
+            else if (estagioAtual === "coleta_idade") {
+                dadosCliente.idade = texto;
+                adicionarMensagemUsuario(texto);
+                estagioAtual = "coleta_ramo";
+                setTimeout(() => {
+                    adicionarMensagemBot("Perfeito. Qual é o <strong>ramo de negócio</strong> ou empresa da sua marca?");
+                    input.placeholder = "Ex: Barbearia, Loja de Roupas, Advocacia...";
+                }, 400);
+            } 
+            else if (estagioAtual === "coleta_ramo") {
+                dadosCliente.ramo = texto;
+                adicionarMensagemUsuario(texto);
+                estagioAtual = "inicio";
+                setTimeout(() => {
+                    adicionarMensagemBot(`Obrigado pelas informações! Dados registrados com sucesso.<br><br>Selecione abaixo qual <strong>serviço</strong> você deseja simular agora:`);
+                    input.placeholder = "Escolha uma opção nos botões acima...";
+                    renderizarBotoes("inicio");
+                }, 400);
+            } 
+            // COMPORTAMENTO PÓS-ONBOARDING (FLUXO ORIGINAL DE BRIEFING)
             else {
                 dadosColetados.detalhesUsuario = texto;
                 adicionarMensagemUsuario(texto);
@@ -223,6 +248,8 @@
 
         function apresentarEspelhoValidacao() {
             let espelho = `<strong>Informações fornecidas:</strong><br><br>`;
+            espelho += `👤 <strong>Cliente:</strong> ${dadosCliente.nome} (${dadosCliente.idade} anos)<br>`;
+            espelho += `💼 <strong>Ramo:</strong> ${dadosCliente.ramo}<br>`;
             espelho += `📁 <strong>Grupo:</strong> ${dadosColetados.categoria}<br>`;
             if(dadosColetados.subcategoria) espelho += `🛠️ <strong>Serviço:</strong> ${dadosColetados.subcategoria}<br>`;
             if(dadosColetados.especificacao) espelho += `💰 <strong>Escopo:</strong> ${dadosColetados.especificacao}<br>`;
@@ -286,24 +313,27 @@
         }
 
         function reiniciarChatbot() {
+            dadosCliente = { nome: "", idade: "", ramo: "" };
             dadosColetados = { categoria: "", subcategoria: "", especificacao: "", detalhesUsuario: "" };
-            estagioAtual = "inicio";
+            estagioAtual = "coleta_nome";
 
             const chatArea = document.getElementById('chatArea');
             chatArea.innerHTML = `
                 <div class="wa-bubble-in p-3 shadow-md text-sm max-w-[85%] self-start text-gray-800 border border-gray-200/50">
-                    <p>Olá! Escolha um tópico abaixo ou digite diretamente o que você precisa para prosseguir.</p>
+                    <p>Olá! Seja bem-vindo ao atendimento da ED Art&Mídia. Para iniciarmos, por favor, digite o seu <strong>nome completo</strong>:</p>
                     <span class="text-[10px] text-gray-400 block text-right mt-1" id="time-stamp"></span>
                 </div>
             `;
             document.getElementById('time-stamp').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             
+            document.getElementById('userInput').placeholder = "Digite seu nome completo...";
             desbloquearInputInferior();
-            renderizarBotoes("inicio");
         }
 
         function dispararWhatsApp() {
-            let msg = `Olá! Recebi um novo lead estruturado da ED Art&Mídia:\n\n`;
+            let msg = `Olá! Recebi um Lead Qualificado da ED Art&Mídia:\n\n`;
+            msg += `👤 *Cliente:* ${dadosCliente.nome} (${dadosCliente.idade} anos)\n`;
+            msg += `💼 *Ramo:* ${dadosCliente.ramo}\n\n`;
             msg += `📁 *Grupo:* ${dadosColetados.categoria}\n`;
             if(dadosColetados.subcategoria) msg += `🛠️ *Serviço:* ${dadosColetados.subcategoria}\n`;
             if(dadosColetados.especificacao) msg += `💰 *Escopo/Preço:* ${dadosColetados.especificacao}\n\n`;
@@ -316,8 +346,8 @@
             if (event.key === "Enter") { enviarTextoLivre(); }
         }
 
+        // IMPORTANTE: O Script inicia sem renderizar botões comerciais, aguardando o input linear do onboarding
         desbloquearInputInferior();
-        renderizarBotoes("inicio");
     </script>
 </body>
 </html>
