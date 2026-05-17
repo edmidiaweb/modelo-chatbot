@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atendimento Inteligente - Serviços de Tecnologia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-family-vars/1.0.0/css/inter.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .wa-bg { background-color: #efeae2; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; opacity: 0.95; }
+        .wa-green { background-color: #00a884; }
+        .wa-bubble-in { background-color: #ffffff; border-radius: 0px 8px 8px 8px; }
+        .wa-bubble-out { background-color: #d9fdd3; border-radius: 8px 0px 8px 8px; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-gray-900 flex items-center justify-center min-h-screen md:p-4">
+
+    <div class="w-full max-w-md h-screen md:h-[700px] md:rounded-2xl shadow-2xl overflow-hidden flex flex-col bg-white">
+        
+        <!-- HEADER -->
+        <div class="wa-green p-4 flex items-center justify-between text-white shadow-md z-10">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold text-lg shadow-inner">TS</div>
+                <div>
+                    <div class="font-bold text-base leading-tight">Suporte & Soluções Digitais</div>
+                    <div class="text-xs opacity-90 flex items-center">
+                        <span class="w-2 h-2 rounded-full bg-green-300 inline-block mr-1.5 animate-pulse"></span>Online
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÁREA DE CONVERSA -->
+        <div class="flex-1 wa-bg p-4 overflow-y-auto space-y-4 flex flex-col" id="chatArea">
+            <!-- Balão Inicial Automático -->
+            <div class="wa-bubble-in p-3 shadow-md text-sm max-w-[85%] self-start text-gray-800 border border-gray-200/50">
+                <p>Olá! Escolha um tópico para prosseguir ou deixe sua mensagem, assim que possível lhe retorno.</p>
+                <span class="text-[10px] text-gray-400 block text-right mt-1" id="time-stamp"></span>
+            </div>
+            
+            <!-- Bloco de Botões Dinâmicos -->
+            <div class="flex flex-col space-y-2 items-start w-full transition-all duration-350" id="optionsBlock"></div>
+        </div>
+
+        <!-- INPUT INFERIOR (Desativado inicialmente, ativa apenas no momento do texto) -->
+        <div class="bg-[#f0f2f5] p-3 flex items-center space-x-2 border-t border-gray-200">
+            <div class="flex-1 bg-gray-200 rounded-lg flex items-center px-3 shadow-inner" id="inputWrapper">
+                <input type="text" id="userInput" placeholder="Escolha uma opção acima..." disabled class="w-full bg-transparent py-2.5 text-sm text-gray-700 outline-none placeholder-gray-400" onkeypress="verificarEnter(event)">
+            </div>
+            <button onclick="enviarTextoBriefing()" id="sendBtn" disabled class="bg-gray-400 text-white p-2.5 rounded-full shadow-md transition-all flex items-center justify-center active:scale-90">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        const TELEFONE_DESTINO = "5513996305218";
+        document.getElementById('time-stamp').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        // ESTRUTURA DE DADOS COMPLETA DO SEU PORTFÓLIO (Fácil de editar valores e textos aqui)
+        const fluxoDados = {
+            inicio: {
+                "🎬 Edição de Mídia": "edicao_midia",
+                "📊 Apresentações e Documentos": "documentos",
+                "🚀 Desenvolvimento Web": "dev_web",
+                "📱 Soluções Financeiras": "financeiro"
+            },
+            edicao_midia: {
+                "🎥 Edição de Vídeo": "video_prazos",
+                "🖼️ Edição de Imagem": "imagem_prazos"
+            },
+            video_prazos: {
+                "⏱️ 10s a 30s (R$30 a R$50)": "INPUT_TEXTO",
+                "⏱️ 1m a 5m (R$80 a R$200)": "INPUT_TEXTO"
+            },
+            imagem_prazos: {
+                "🎨 Criação de Logotipo (R$50 a R$100)": "INPUT_TEXTO",
+                "📸 Arte para Redes Sociais (R$20 a R$40)": "INPUT_TEXTO"
+            },
+            documentos: {
+                "🖥️ Apresentação PowerPoint": "ppt_prazos",
+                "📚 Documentação Acadêmica / ABNT": "INPUT_TEXTO"
+            },
+            ppt_prazos: {
+                "📄 Até 10 Slides (R$40 a R$70)": "INPUT_TEXTO",
+                "📄 Acima de 10 Slides (Sob Consulta)": "INPUT_TEXTO"
+            },
+            dev_web: {
+                "🌐 Landing Page One-Page (R$150 a R$300)": "INPUT_TEXTO",
+                "🛒 Mini-SaaS / Sistema Web (Sob Consulta)": "INPUT_TEXTO"
+            },
+            financeiro: {
+                "🔗 Gerar QR Code Dinâmico Pix": "INPUT_TEXTO",
+                "💳 Integração de Checkout Checkout": "INPUT_TEXTO"
+            }
+        };
+
+        // Estado do atendimento do cliente atual
+        let dadosColetados = {
+            categoria: "",
+            subcategoria: "",
+            especificacao: "",
+            detalhesUsuario: ""
+        };
+
+        let estagioAtual = "inicio";
+
+        function rolarChat() {
+            const chatArea = document.getElementById('chatArea');
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function adicionarMensagemBot(texto) {
+            const chatArea = document.getElementById('chatArea');
+            const botBubble = document.createElement('div');
+            botBubble.className = "wa-bubble-in p-3 shadow-md text-sm max-w-[85%] self-start text-gray-800 border border-gray-200/50 mt-2";
+            botBubble.innerHTML = `<p>${texto}</p><span class="text-[10px] text-gray-400 block text-right mt-1">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+            chatArea.appendChild(botBubble);
+            rolarChat();
+        }
+
+        function adicionarMensagemUsuario(texto) {
+            const chatArea = document.getElementById('chatArea');
+            const userBubble = document.createElement('div');
+            userBubble.className = "wa-bubble-out p-3 shadow-md text-sm max-w-[85%] self-end text-gray-800 mt-2";
+            userBubble.innerHTML = `<p>${texto}</p><span class="text-[9px] text-gray-400 block text-right mt-1">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>`;
+            chatArea.appendChild(userBubble);
+            rolarChat();
+        }
+
+        function renderizarBotoes(chaveEstado) {
+            const container = document.getElementById('optionsBlock');
+            container.innerHTML = ""; 
+            
+            const opcoes = fluxoDados[chaveEstado];
+            
+            Object.keys(opcoes).forEach(textoBotao => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white text-emerald-700 text-sm px-4 py-3 rounded-xl font-medium shadow-md hover:bg-emerald-50 active:scale-95 transition-all text-left w-full border border-emerald-100/50";
+                btn.innerText = textoBotao;
+                btn.onclick = () => processarClique(textoBotao, opcoes[textoBotao]);
+                container.appendChild(btn);
+            });
+            rolarChat();
+        }
+
+        function processarClique(textoSelecionado, proximoPasso) {
+            adicionarMensagemUsuario(textoSelecionado);
+
+            // Mapeia e guarda as informações com base no nível do estágio atual
+            if (estagioAtual === "inicio") {
+                dadosColetados.categoria = textoSelecionado;
+            } else if (fluxoDados[estagioAtual] && Object.values(fluxoDados[estagioAtual]).includes("INPUT_TEXTO")) {
+                dadosColetados.especificacao = textoSelecionado;
+            } else {
+                dadosColetados.subcategoria = textoSelecionado;
+            }
+
+            if (proximoPasso === "INPUT_TEXTO") {
+                // Esconde botões e abre o campo de digitação
+                document.getElementById('optionsBlock').innerHTML = "";
+                ativarInputTexto();
+            } else {
+                estagioAtual = proximoPasso;
+                setTimeout(() => {
+                    renderizarBotoes(proximoPasso);
+                }, 400);
+            }
+        }
+
+        function ativarInputTexto() {
+            adicionarMensagemBot("Descreva o conteúdo do serviço e o resultado final esperado.");
+            
+            const input = document.getElementById('userInput');
+            const btn = document.getElementById('sendBtn');
+            const wrapper = document.getElementById('inputWrapper');
+
+            input.disabled = false;
+            input.placeholder = "Escreva seu briefing detalhado aqui...";
+            wrapper.classList.remove('bg-gray-200');
+            wrapper.classList.add('bg-white');
+            
+            btn.disabled = false;
+            btn.classList.remove('bg-gray-400');
+            btn.classList.add('wa-green');
+        }
+
+        function enviarTextoBriefing() {
+            const input = document.getElementById('userInput');
+            const texto = input.value.trim();
+            
+            if (texto === "") return;
+
+            dadosColetados.detalhesUsuario = texto;
+            adicionarMensagemUsuario(texto);
+            input.value = "";
+            
+            // Trava os inputs novamente após envio
+            input.disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+
+            adicionarMensagemBot("Obrigado pelas informações, assim que possível lhe retorno.");
+
+            // Dispara para o WhatsApp após uma pequena janela de leitura humana
+            setTimeout(() => {
+                dispararWhatsApp();
+            }, 1200);
+        }
+
+        function dispararWhatsApp() {
+            let mensagemFormatada = `Olá! Recebi um novo lead estruturado do assistente virtual:\n\n`;
+            mensagemFormatada += `📁 *Grupo:* ${dadosColetados.categoria}\n`;
+            if(dadosColetados.subcategoria) mensagemFormatada += `🛠️ *Serviço:* ${dadosColetados.subcategoria}\n`;
+            if(dadosColetados.especificacao) mensagemFormatada += `💰 *Escopo/Preço:* ${dadosColetados.especificacao}\n\n`;
+            mensagemFormatada += `📝 *Briefing do Cliente:*\n"${dadosColetados.detalhesUsuario}"`;
+
+            window.location.href = `https://wa.me/${TELEFONE_DESTINO}?text=${encodeURIComponent(mensagemFormatada)}`;
+        }
+
+        function verificarEnter(event) {
+            if (event.key === "Enter") {
+                enviarTextoBriefing();
+            }
+        }
+
+        // Execução Inicial
+        renderizarBotoes("inicio");
+    </script>
+</body>
+</html>
