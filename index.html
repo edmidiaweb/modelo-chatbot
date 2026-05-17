@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atendimento Inteligente - Serviços de Tecnologia</title>
+    <title>Atendimento Inteligente - ED Art&Mídia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-family-vars/1.0.0/css/inter.min.css">
     <style>
@@ -20,10 +20,9 @@
 
     <div class="w-full max-w-md h-screen md:h-[700px] md:rounded-2xl shadow-2xl overflow-hidden flex flex-col bg-white">
         
-        <!-- HEADER -->
         <div class="wa-green p-4 flex items-center justify-between text-white shadow-md z-10">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold text-lg shadow-inner">EA</div>
+                <img src="ed_art.png" alt="ED Art&Mídia Logo" class="w-10 h-10 rounded-lg bg-black object-cover shadow-inner border border-emerald-400/30">
                 <div>
                     <div class="font-bold text-base leading-tight">ED Art&Mídia - Serviços Digitais</div>
                     <div class="text-xs opacity-90 flex items-center">
@@ -33,19 +32,15 @@
             </div>
         </div>
 
-        <!-- ÁREA DE CONVERSA -->
         <div class="flex-1 wa-bg p-4 overflow-y-auto space-y-4 flex flex-col" id="chatArea">
-            <!-- Balão Inicial Automático -->
             <div class="wa-bubble-in p-3 shadow-md text-sm max-w-[85%] self-start text-gray-800 border border-gray-200/50">
                 <p>Olá! Escolha um tópico abaixo ou digite o que você precisa para prosseguir.</p>
                 <span class="text-[10px] text-gray-400 block text-right mt-1" id="time-stamp"></span>
             </div>
         </div>
 
-        <!-- BLOCO DE BOTÕES (FIXADO NA BASE) -->
         <div class="px-4 py-2 bg-[#efeae2]/60 border-t border-gray-200/30 flex flex-col space-y-2" id="optionsBlock"></div>
 
-        <!-- INPUT INFERIOR (ATIVADO POR PADRÃO) -->
         <div class="bg-[#f0f2f5] p-3 flex items-center space-x-2 border-t border-gray-200">
             <div class="flex-1 bg-white rounded-lg flex items-center px-3 shadow-inner" id="inputWrapper">
                 <input type="text" id="userInput" placeholder="Escolha uma opção ou digite sua mensagem..." class="w-full bg-transparent py-2.5 text-sm text-gray-700 outline-none placeholder-gray-400" onkeypress="verificarEnter(event)">
@@ -308,7 +303,7 @@
         }
 
         function dispararWhatsApp() {
-            let msg = `Olá! Recebi um novo lead estruturado do assistente virtual:\n\n`;
+            let msg = `Olá! Recebi um Crypto-Lead estruturado da ED Art&Mídia:\n\n`;
             msg += `📁 *Grupo:* ${dadosColetados.categoria}\n`;
             if(dadosColetados.subcategoria) msg += `🛠️ *Serviço:* ${dadosColetados.subcategoria}\n`;
             if(dadosColetados.especificacao) msg += `💰 *Escopo/Preço:* ${dadosColetados.especificacao}\n\n`;
