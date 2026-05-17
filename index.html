@@ -23,9 +23,9 @@
         <!-- HEADER -->
         <div class="wa-green p-4 flex items-center justify-between text-white shadow-md z-10">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold text-lg shadow-inner">TS</div>
+                <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold text-lg shadow-inner">EA</div>
                 <div>
-                    <div class="font-bold text-base leading-tight">Suporte & Soluções Digitais</div>
+                    <div class="font-bold text-base leading-tight">ED Art&Mídia - Serviços Digitais</div>
                     <div class="text-xs opacity-90 flex items-center">
                         <span class="w-2 h-2 rounded-full bg-green-300 inline-block mr-1.5 animate-pulse"></span>Online
                     </div>
@@ -169,9 +169,8 @@
             document.getElementById('userInput').placeholder = "Escreva seu briefing detalhado aqui...";
         }
 
-        // NOVA FUNÇÃO: Trata a digitação a qualquer momento
         function enviarTextoLivre() {
-            if (aguardandoValidacao) return; // Bloqueia digitação durante a tela de sim/não
+            if (aguardandoValidacao) return; 
 
             const input = document.getElementById('userInput');
             const texto = input.value.trim();
@@ -180,7 +179,6 @@
 
             input.value = "";
 
-            // Caso o usuário digite texto livre logo no início ou antes do final padrão
             if (dadosColetados.categoria === "") {
                 dadosColetados.categoria = "Geral / Mensagem Direta";
                 dadosColetados.detalhesUsuario = texto;
@@ -189,7 +187,6 @@
                 bloquearInputInferior();
                 setTimeout(() => { apresentarEspelhoValidacao(); }, 600);
             } 
-            // Caso ele esteja na etapa final padrão (INPUT_TEXTO)
             else {
                 dadosColetados.detalhesUsuario = texto;
                 adicionarMensagemUsuario(texto);
@@ -323,7 +320,6 @@
             if (event.key === "Enter") { enviarTextoLivre(); }
         }
 
-        // Inicialização padrão com tudo liberado
         desbloquearInputInferior();
         renderizarBotoes("inicio");
     </script>
